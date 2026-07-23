@@ -8,6 +8,21 @@ CYAN='\033[0;36m'
 PURPLE='\033[0;35m'
 NC='\033[0m'
 
+NPM_REGISTRY="https://registry.npmjs.org"
+
+install_panel_dependencies() {
+    echo -e "${PURPLE}[→] Installing dependencies from ${NPM_REGISTRY}...${NC}"
+    if ! npm --registry="$NPM_REGISTRY" install --no-audit --no-fund --prefer-online; then
+        echo -e "${RED}[✗] npm install failed. The panel build was not started.${NC}"
+        return 1
+    fi
+
+    if [ ! -x "node_modules/.bin/vite" ]; then
+        echo -e "${RED}[✗] Vite was not installed. Remove the incomplete node_modules directory and retry.${NC}"
+        return 1
+    fi
+}
+
 install_panel() {
     echo -e "\n${CYAN}╔══════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║      Installing CodeZ Panel          ║${NC}"
@@ -49,7 +64,11 @@ install_panel() {
     # Install PM2 if missing
     if ! command -v pm2 &>/dev/null; then
         echo -e "${PURPLE}[→] Installing PM2...${NC}"
-        sudo npm install -g pm2 --silent 2>/dev/null || npm install -g pm2 --silent
+        if ! sudo npm --registry="$NPM_REGISTRY" install -g pm2 --silent --no-audit --no-fund 2>/dev/null &&
+           ! npm --registry="$NPM_REGISTRY" install -g pm2 --silent --no-audit --no-fund; then
+            echo -e "${RED}[✗] PM2 installation failed. Check network access and retry.${NC}"
+            return 1
+        fi
     else
         echo -e "${GREEN}[✓] PM2 already installed.${NC}"
     fi
@@ -70,20 +89,20 @@ install_panel() {
 
     cd CodeZ || { echo -e "${RED}[✗] Failed to enter directory!${NC}"; return 1; }
 
-    echo -e "${PURPLE}[→] Installing dependencies...${NC}"
-    npm install
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}[✗] npm install failed!${NC}"
+    if ! install_panel_dependencies; then
         cd ..
         return 1
     fi
 
     echo -e "${PURPLE}[→] Creating admin user...${NC}"
-    npm run createuser
+    if ! npm run createuser; then
+        echo -e "${RED}[✗] Admin user setup failed.${NC}"
+        cd ..
+        return 1
+    fi
 
     echo -e "${PURPLE}[→] Building panel...${NC}"
-    npm run build
-    if [ $? -ne 0 ]; then
+    if ! npm run build; then
         echo -e "${RED}[✗] Build failed! Check errors above.${NC}"
         cd ..
         return 1
@@ -111,14 +130,19 @@ update_panel() {
 
         echo -e "${PURPLE}[→] Pulling latest changes...${NC}"
         git stash
-        git pull
+        if ! git pull --ff-only origin main; then
+            echo -e "${RED}[✗] Could not pull the latest main branch.${NC}"
+            cd ..
+            return 1
+        fi
 
-        echo -e "${PURPLE}[→] Installing updated dependencies...${NC}"
-        npm install
+        if ! install_panel_dependencies; then
+            cd ..
+            return 1
+        fi
 
         echo -e "${PURPLE}[→] Rebuilding panel...${NC}"
-        npm run build
-        if [ $? -ne 0 ]; then
+        if ! npm run build; then
             echo -e "${RED}[✗] Build failed! Check errors above.${NC}"
             cd ..
             return 1
