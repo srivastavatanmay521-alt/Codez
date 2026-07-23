@@ -10,9 +10,15 @@ NC='\033[0m'
 
 NPM_REGISTRY="https://registry.npmjs.org"
 
+run_npm() {
+    env -u NPM_CONFIG_REGISTRY -u npm_config_registry \
+        NPM_CONFIG_USERCONFIG=/dev/null \
+        npm --registry="$NPM_REGISTRY" "$@"
+}
+
 install_panel_dependencies() {
     echo -e "${PURPLE}[→] Installing dependencies from ${NPM_REGISTRY}...${NC}"
-    if ! npm --registry="$NPM_REGISTRY" install --no-audit --no-fund --prefer-online; then
+    if ! run_npm ci --no-audit --no-fund --prefer-online --replace-registry-host=never; then
         echo -e "${RED}[✗] npm install failed. The panel build was not started.${NC}"
         return 1
     fi
@@ -64,8 +70,10 @@ install_panel() {
     # Install PM2 if missing
     if ! command -v pm2 &>/dev/null; then
         echo -e "${PURPLE}[→] Installing PM2...${NC}"
-        if ! sudo npm --registry="$NPM_REGISTRY" install -g pm2 --silent --no-audit --no-fund 2>/dev/null &&
-           ! npm --registry="$NPM_REGISTRY" install -g pm2 --silent --no-audit --no-fund; then
+        if ! sudo env -u NPM_CONFIG_REGISTRY -u npm_config_registry \
+            NPM_CONFIG_USERCONFIG=/dev/null npm --registry="$NPM_REGISTRY" \
+            install -g pm2 --silent --no-audit --no-fund 2>/dev/null &&
+           ! run_npm install -g pm2 --silent --no-audit --no-fund; then
             echo -e "${RED}[✗] PM2 installation failed. Check network access and retry.${NC}"
             return 1
         fi
