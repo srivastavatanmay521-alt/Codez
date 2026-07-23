@@ -1,6 +1,6 @@
-# jtg panel
+# CodeZ
 
-Made by Jishnu
+Made by Void
 
 ## Installation
 

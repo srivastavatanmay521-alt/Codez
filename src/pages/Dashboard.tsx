@@ -42,21 +42,21 @@ export default function Dashboard() {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 }
+      transition: { staggerChildren: 0.07 }
     }
   };
 
   const itemAnim = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 380, damping: 22 } }
   };
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 15 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
       className="p-5 md:p-10 max-w-7xl mx-auto"
     >
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
@@ -89,7 +89,7 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="bg-black/40 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden shadow-[0_0_50px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5 relative">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.4 }} className="bg-black/40 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden shadow-[0_0_50px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5 relative">
         {/* Subtle top glow */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-50" />
         
@@ -109,7 +109,7 @@ export default function Dashboard() {
                 key={server.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + (index * 0.05) }}
+                transition={{ delay: 0.3 + (index * 0.04) }}
               >
                 <Link to={`/servers/${server.id}`} className="flex items-center justify-between p-5 md:p-6 hover:bg-white/5 transition-all group relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -148,7 +148,7 @@ export default function Dashboard() {
 function StatCard({ title, value, icon, trend, chartColor }: { title: string, value: string, icon: React.ReactNode, trend?: string, chartColor?: string }) {
   const itemAnim = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 380, damping: 22 } }
   };
   return (
     <motion.div variants={itemAnim} className="bg-black/40 backdrop-blur-xl p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:bg-black/60 transition-all shadow-[0_0_40px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5">

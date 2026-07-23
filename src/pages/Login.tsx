@@ -38,12 +38,12 @@ export default function Login() {
         }));
         shakeKeyframes.push({ x: 0, y: 0, rotation: 0, duration: 0.05 });
 
-        tl.to(".parallax-container", { opacity: 1, duration: 3, ease: "power2.inOut" })
-          .to(".desert-wrapper", { backgroundColor: "#F7ABAE", duration: 1.5 }, "-=1.5")
-          .to(".parallax-container", { scale: 1.3, transformOrigin: "center 35%", duration: 3, ease: "power2.inOut" }, "-=1")
-          .to(".parallax-container", { scale: 1, duration: 0.5, ease: "power4.inOut" })
+        tl.to(".parallax-container", { opacity: 1, duration: 2, ease: "power2.inOut" })
+          .to(".desert-wrapper", { backgroundColor: "#F7ABAE", duration: 1.0 }, "-=1.0")
+          .to(".parallax-container", { scale: 1.2, transformOrigin: "center 35%", duration: 2.5, ease: "power2.inOut" }, "-=0.8")
+          .to(".parallax-container", { scale: 1, duration: 0.35, ease: "power4.inOut" })
           .to(".parallax-container", { keyframes: shakeKeyframes, ease: "none" })
-          .to(".login-card", { autoAlpha: 1, y: 0, duration: 1.2, ease: "power3.out" }, "+=0.2");
+          .to(".login-card", { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out" }, "+=0.1");
       } else {
         // Instant show
         gsap.set(".desert-wrapper", { backgroundColor: "#F7ABAE" });
@@ -57,7 +57,7 @@ export default function Login() {
       layers.forEach((layerNum) => {
         gsap.to(`.layer-${layerNum}`, {
           y: -10 - layerNum * 5, 
-          duration: 3 + layerNum * 0.5,
+          duration: 2.5 + layerNum * 0.4,
           ease: "sine.inOut",
           yoyo: true,
           repeat: -1
@@ -65,8 +65,8 @@ export default function Login() {
       });
       
       gsap.to(".layer-text", {
-         y: -20,
-         duration: 4,
+         y: -15,
+         duration: 3.2,
          ease: "sine.inOut",
          yoyo: true,
          repeat: -1
