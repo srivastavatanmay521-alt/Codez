@@ -7,7 +7,7 @@ Made by Void
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd jtg-panel
+   cd codez
    ```
 
 2. Install dependencies:
