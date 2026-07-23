@@ -26,7 +26,7 @@ export default function Login() {
 
       if (enableLoginAnimation !== false) {
         // Cinematic Intro Sequence
-        gsap.set(".desert-wrapper", { backgroundColor: "#000" });
+        gsap.set(".desert-wrapper", { backgroundColor: "#020408" });
         gsap.set(".login-card", { autoAlpha: 0, y: 50 });
         gsap.set(".parallax-container", { scale: 1.1, opacity: 0 });
         
@@ -39,14 +39,14 @@ export default function Login() {
         shakeKeyframes.push({ x: 0, y: 0, rotation: 0, duration: 0.05 });
 
         tl.to(".parallax-container", { opacity: 1, duration: 2, ease: "power2.inOut" })
-          .to(".desert-wrapper", { backgroundColor: "#F7ABAE", duration: 1.0 }, "-=1.0")
+          .to(".desert-wrapper", { backgroundColor: "#050810", duration: 1.0 }, "-=1.0")
           .to(".parallax-container", { scale: 1.2, transformOrigin: "center 35%", duration: 2.5, ease: "power2.inOut" }, "-=0.8")
           .to(".parallax-container", { scale: 1, duration: 0.35, ease: "power4.inOut" })
           .to(".parallax-container", { keyframes: shakeKeyframes, ease: "none" })
           .to(".login-card", { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out" }, "+=0.1");
       } else {
         // Instant show
-        gsap.set(".desert-wrapper", { backgroundColor: "#F7ABAE" });
+        gsap.set(".desert-wrapper", { backgroundColor: "#050810" });
         gsap.set(".login-card", { autoAlpha: 1, y: 0 });
         gsap.set(".parallax-container", { scale: 1, opacity: 1 });
         setIntroDone(true);
@@ -137,7 +137,7 @@ export default function Login() {
 
       <div className="login-card">
         <h2 className="login-title">{panelName} Login</h2>
-        <p className="login-subtitle">Welcome to the nature</p>
+        <p className="login-subtitle">Sign in to manage your servers</p>
         
         <form onSubmit={handleLogin} className="login-form">
           {error && <div className="login-error">{error}</div>}
