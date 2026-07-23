@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { Server, Plus } from "lucide-react";
+import { Server, Plus, Bot } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import ServerLiveStats from "../components/ServerLiveStats";
@@ -69,10 +69,17 @@ export default function ServerList() {
                 <div className="flex items-center space-x-4">
                   <div className="w-14 h-14 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center group-hover:border-indigo-500/40 group-hover:bg-indigo-500/20 transition-all shadow-inner relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <Server className="w-7 h-7 text-zinc-400 group-hover:text-cyan-400 transition-colors relative z-10" />
+                    {server.type === "DISCORD_BOT" ? (
+                      <Bot className="w-7 h-7 text-violet-400 group-hover:text-violet-300 transition-colors relative z-10" />
+                    ) : (
+                      <Server className="w-7 h-7 text-zinc-400 group-hover:text-cyan-400 transition-colors relative z-10" />
+                    )}
                   </div>
                   <div>
                     <h2 className="font-bold tracking-tight text-white text-xl group-hover:text-indigo-300 transition-colors drop-shadow-sm">{server.name}</h2>
+                    <span className={`text-[10px] uppercase tracking-[0.2em] ${server.type === "DISCORD_BOT" ? "text-violet-400" : "text-zinc-500"}`}>
+                      {server.type === "DISCORD_BOT" ? "Discord Bot // Node.js" : server.type}
+                    </span>
                     <div className="flex items-center mt-1.5 space-x-2">
                        <span className="flex h-2.5 w-2.5 relative">
                           {server.status === 'online' && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
@@ -100,7 +107,7 @@ export default function ServerList() {
                   <p className="font-mono text-white font-bold text-xs md:text-sm">{server.disk || 10} <span className="text-zinc-500 opacity-70">GB</span></p>
                 </div>
                 <div>
-                  <p className="text-purple-400/80 text-[10px] md:text-[11px] mb-1 font-bold uppercase tracking-[0.15em] drop-shadow-sm">Version</p>
+                  <p className="text-purple-400/80 text-[10px] md:text-[11px] mb-1 font-bold uppercase tracking-[0.15em] drop-shadow-sm">{server.type === "DISCORD_BOT" ? "Runtime" : "Version"}</p>
                   <p className="text-white font-bold text-xs md:text-sm truncate font-mono" title={server.version}>
                     {server.version}
                   </p>

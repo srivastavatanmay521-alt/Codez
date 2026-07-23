@@ -92,8 +92,9 @@ export default function ServerView() {
   ];
 
   const isProxy = ["VELOCITY", "BUNGEECORD", "WATERFALL"].includes(server?.type?.toUpperCase() || "");
+  const isDiscordBot = server?.type?.toUpperCase() === "DISCORD_BOT";
   
-  if (!isProxy) {
+  if (!isProxy && !isDiscordBot) {
     tabs.splice(1, 0, { name: "Properties", path: `/servers/${id}/properties`, exactPath: "properties", icon: <Sliders size={18} /> });
   }
 
@@ -110,7 +111,7 @@ export default function ServerView() {
     { name: "Backup", path: `/servers/${id}/backup`, exactPath: "backup", icon: <Archive size={18} /> }
   );
 
-  if (enablePlayit) {
+  if (enablePlayit && !isDiscordBot) {
     tabs.push(
       { name: "Playit Tunnel", path: `/servers/${id}/playit`, exactPath: "playit", icon: <Globe size={18} /> }
     );

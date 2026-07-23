@@ -77,8 +77,18 @@ export const createServer = async (req: Request, res: Response) => {
     return res.status(403).json({ error: "Only admins can create servers" });
   }
   const { name, ram, port, version, theme, cpu, disk, owner, ipAlias, type } = req.body;
-  if (!name || !ram || !port) {
-    res.status(400).json({ error: "Missing required fields (name, ram, port)" });
+  const normalizedType = String(type || "PAPER").toUpperCase();
+  const isDiscordBot = normalizedType === "DISCORD_BOT";
+  const requestedEntrypoint = String(req.body.botEntrypoint || "index.js").trim();
+  if (isDiscordBot && (!requestedEntrypoint || requestedEntrypoint.startsWith("/") || requestedEntrypoint.includes("..") || !/^[a-zA-Z0-9_./-]+$/.test(requestedEntrypoint))) {
+    return res.status(400).json({ error: "Bot entry file must be a safe relative path such as index.js" });
+  }
+  if (!name || !ram || (!isDiscordBot && !port)) {
+    res.status(400).json({
+      error: isDiscordBot
+        ? "Missing required fields (name, ram)"
+        : "Missing required fields (name, ram, port)"
+    });
     return;
   }
 
@@ -90,10 +100,11 @@ export const createServer = async (req: Request, res: Response) => {
     ram,
     cpu: cpu || 100,
     disk: disk || 10,
-    port,
+    port: isDiscordBot ? 0 : port,
     ipAlias: ipAlias || "",
-    type: type || "PAPER",
-    version: version || "1.21.1",
+    type: normalizedType,
+    version: version || (isDiscordBot ? "node22" : "1.21.1"),
+    botEntrypoint: isDiscordBot ? requestedEntrypoint : "",
     theme: theme || "default",
     status: "installing",
     createdAt: new Date().toISOString(),
@@ -102,7 +113,7 @@ export const createServer = async (req: Request, res: Response) => {
 
   const servers = await readJSON("servers.json") || [];
   
-  if (servers.find((s: any) => s.port == port)) {
+  if (port && servers.find((s: any) => s.port == port)) {
     res.status(400).json({ error: "Port is already in use by another server." });
     return;
   }

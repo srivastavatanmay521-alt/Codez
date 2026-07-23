@@ -1,645 +1,662 @@
-import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
-import { useAuth } from "../context/AuthContext";
-import { useSettings } from "../context/SettingsContext";
-import { motion } from "framer-motion";
-import { Shield, User, Trash2, Layout, Upload, RefreshCw } from "lucide-react";
-import { ImageCropper } from "../components/ImageCropper";
-import { LoadingOverlay } from "../components/LoadingOverlay";
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { Shield, Users, Settings, Activity, Server, Lock, UserPlus, X, Check } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
-export default function SettingsPage() {
-  const { user, logout } = useAuth();
-  const { panelName, panelLogo, panelBackgroundImage, panelBackgroundBlur, enablePlayit, enableTutorial, enableLoginAnimation, fetchSettings } = useSettings();
-  const [users, setUsers] = useState<any[]>([]);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("user");
-  const [newPanelName, setNewPanelName] = useState(panelName);
-  const [newEnablePlayit, setNewEnablePlayit] = useState(enablePlayit);
-  const [newEnableTutorial, setNewEnableTutorial] = useState(enableTutorial);
-  const [newEnableLoginAnimation, setNewEnableLoginAnimation] = useState(enableLoginAnimation);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [croppingType, setCroppingType] = useState<"logo" | "background" | null>(null);
-  const [bgAspectRatio, setBgAspectRatio] = useState<number>(16/9);
-  const [tempBgBlur, setTempBgBlur] = useState<number>(10);
-  const bgFileInputRef = useRef<HTMLInputElement>(null);
-  const [oldPassword, setOldPassword] = useState("");
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [adminUserNewPassword, setAdminUserNewPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isCreatingUser, setIsCreatingUser] = useState(false);
-  const [isUpdatingLogo, setIsUpdatingLogo] = useState(false);
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isUpdatingSystem, setIsUpdatingSystem] = useState(false);
+const TABS = [
+  { id: 'system', label: 'SYSTEM_STATUS', icon: Activity },
+  { id: 'users', label: 'USER_MANIFEST', icon: Users },
+  { id: 'security', label: 'ACCESS_CONTROL', icon: Shield },
+  { id: 'panel', label: 'PANEL_CONFIG', icon: Settings },
+];
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+interface SettingsType {
+  onboarding: boolean;
+  loginAnim: boolean;
+  bgBlur: boolean;
+}
 
-  const handleSystemUpdate = async () => {
-    try {
-      setIsUpdatingSystem(true);
-      await axios.post("/api/system/update");
-      setIsUpdatingSystem(false);
-    } catch (e) {
-      alert("Failed to update system. Please check logs.");
-      setIsUpdatingSystem(false);
-    }
-  };
+function SystemStatus() {
+  const [updating, setUpdating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [logs, setLogs] = useState<string[]>([]);
+  const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setNewPanelName(panelName);
-    setNewEnablePlayit(enablePlayit);
-    setNewEnableTutorial(enableTutorial);
-    setNewEnableLoginAnimation(enableLoginAnimation);
-  }, [panelName, enablePlayit, enableTutorial, enableLoginAnimation]);
+    if (logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs]);
+
+  const [updateError, setUpdateError] = useState('');
+
+  const triggerUpdate = async () => {
+    setUpdating(true);
+    setProgress(0);
+    setLogs(['Initiating sequence...', 'Bypassing local proxies...', 'Injecting payload...']);
+    setUpdateError('');
+    try {
+      await axios.post('/api/system/update');
+    } catch (error: any) {
+      setUpdating(false);
+      setUpdateError(error.response?.data?.error || 'System update could not be initialized.');
+      return;
+    }
+
+    let p = 0;
+    const interval = setInterval(() => {
+      p += Math.floor(Math.random() * 15) + 5;
+      if (p >= 100) {
+        p = 100;
+        clearInterval(interval);
+        setTimeout(() => {
+          setUpdating(false);
+          setLogs(l => [...l, 'System optimal.']);
+        }, 1500);
+      }
+      setProgress(p);
+      setLogs(l => [...l, `Patching module 0x${Math.floor(Math.random()*10000).toString(16).toUpperCase()}...`]);
+    }, 400);
+  };
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-in fade-in duration-500">
+      <div className="col-span-2 space-y-8">
+        <div>
+          <h1 className="text-2xl font-dossier italic text-[#d6d1c4] mb-2">System Status</h1>
+          <p className="text-xs text-[#6b665c] tracking-widest uppercase">Overview and Maintenance</p>
+        </div>
+
+        <div className="border border-[#231f20] bg-[#0c0b0b] p-6 relative group shadow-xl">
+           <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#6b665c]"></div>
+           <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#6b665c]"></div>
+
+           <h2 className="text-[10px] text-[#6b665c] tracking-[0.3em] mb-6">NETWORK // PLAYIT_TUNNEL</h2>
+           <div className="flex items-center gap-6">
+              <div className="w-14 h-14 border border-[#5c0a0a] flex items-center justify-center bg-[#141212] relative">
+                 <div className="absolute inset-0 bg-[#a31515]/10 animate-pulse"></div>
+                 <Server className="text-[#a31515] w-6 h-6 relative z-10" />
+              </div>
+              <div>
+                <div className="text-xl text-[#d6d1c4] font-dossier tracking-wide">CONNECTED</div>
+                <div className="text-xs text-[#6b665c] mt-1">Tunnel active on port 25565</div>
+              </div>
+              <div className="ml-auto flex items-center gap-3 text-[#a31515] text-[10px] tracking-[0.2em] px-3 py-1 border border-[#5c0a0a] bg-[#141212]">
+                <span className="w-1.5 h-1.5 bg-[#a31515] animate-pulse"></span>
+                LIVE
+              </div>
+           </div>
+        </div>
+
+        <div className="border border-[#231f20] bg-[#0c0b0b] p-6 shadow-xl">
+           <h2 className="text-[10px] text-[#6b665c] tracking-[0.3em] mb-6">MAINTENANCE // KERNEL</h2>
+           {updateError && <div className="mb-4 border border-[#5c0a0a] bg-[#5c0a0a]/10 p-3 text-xs text-[#d6d1c4]">{updateError}</div>}
+           {updating ? (
+             <div className="space-y-4">
+                <div className="flex justify-between text-[10px] text-[#a31515] tracking-widest mb-2">
+                  <span>UPDATING SYSTEM...</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="h-1 w-full bg-[#141212] relative overflow-hidden">
+                  <div className="absolute top-0 left-0 h-full bg-[#a31515] transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                </div>
+                <div className="h-40 bg-[#050505] border border-[#231f20] p-4 text-[10px] text-[#6b665c] overflow-y-auto flex flex-col font-panel space-y-1">
+                  {logs.map((l, i) => <div key={i} className={i === logs.length -1 ? 'text-[#d6d1c4]' : 'opacity-60'}>{`> `}{l}</div>)}
+                  <div ref={logsEndRef} />
+                </div>
+             </div>
+           ) : (
+             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+               <div>
+                  <div className="text-[#d6d1c4] mb-1 font-dossier text-lg tracking-wide">Update Available: v2.4.0-DEATH</div>
+                  <div className="text-xs text-[#6b665c]">Security patches and entity definition updates.</div>
+               </div>
+               <button onClick={triggerUpdate} className="px-6 py-3 bg-[#141212] text-[#a31515] border border-[#5c0a0a] hover:bg-[#5c0a0a]/30 transition-all text-[10px] tracking-[0.2em]">
+                 INITIALIZE
+               </button>
+             </div>
+           )}
+        </div>
+      </div>
+
+      <div className="col-span-1 min-h-[400px]">
+        <div className="border border-[#231f20] bg-[#0c0b0b] p-2 relative shadow-2xl h-full flex flex-col group">
+          <div className="p-4 border-b border-[#231f20] flex justify-between items-center bg-[#080707]">
+            <span className="text-[10px] text-[#6b665c] tracking-[0.2em]">ASSET_REF // NULL_ENTITY</span>
+            <Lock className="w-3 h-3 text-[#5c0a0a]" />
+          </div>
+
+          <div className="relative flex-1 w-full flex items-center justify-center bg-[#050505] overflow-hidden">
+             <div className="absolute inset-0 opacity-[0.03] mix-blend-screen" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
+
+             <img
+                src="/images/shinigami-reference.png"
+                className="absolute inset-0 w-full h-full object-cover object-top invert opacity-40 mix-blend-lighten filter contrast-125 group-hover:opacity-70 group-hover:scale-105 transition-all duration-1000 ease-out"
+                alt="Entity Reference"
+             />
+
+             <div className="absolute inset-0 bg-gradient-to-t from-[#0c0b0b] via-transparent to-transparent"></div>
+             <div className="absolute inset-0 bg-gradient-to-b from-[#0c0b0b] via-transparent to-transparent opacity-50"></div>
+          </div>
+
+          <div className="p-6 bg-[#080707] border-t border-[#231f20] relative">
+            <div className="font-dossier italic text-[#a31515] text-xl leading-snug">
+              "Tethered to Operator.<br/>Do not sever the link."
+            </div>
+            <div className="absolute -bottom-2 -right-2 text-[10px] text-[#5c0a0a] transform -rotate-6 font-dossier italic">
+              confirmed.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function UserManifest() {
+  const { user } = useAuth();
+  const [users, setUsers] = useState<any[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [newUser, setNewUser] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('user');
+  const [isAdding, setIsAdding] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchUsers = async () => {
-    if (user.role !== "admin") return;
     try {
-      const res = await axios.get("/api/system/users");
-      setUsers(res.data);
-    } catch (e) {}
+      const response = await axios.get('/api/system/users');
+      setUsers(response.data);
+    } catch (requestError: any) {
+      setError(requestError.response?.data?.error || 'Unable to load user manifest.');
+    }
   };
 
   useEffect(() => {
     fetchUsers();
-    if (panelBackgroundBlur !== undefined) setTempBgBlur(panelBackgroundBlur);
-  }, [user]);
+  }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "logo" | "background" = "logo") => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.addEventListener('load', async () => {
-        const base64 = reader.result?.toString() || null;
-        if (base64) {
-          if (type === "logo") {
-            setSelectedImage(base64);
-            setCroppingType(type);
-          } else if (type === "background") {
-            setIsProcessing(true);
-            try {
-              await axios.put("/api/system/settings", { panelBackgroundImage: base64 });
-              await fetchSettings();
-            } catch(err) {
-              console.error(err);
-            } finally {
-              setIsProcessing(false);
-            }
-          }
-        }
-      });
-      reader.readAsDataURL(file);
-    }
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    if (bgFileInputRef.current) bgFileInputRef.current.value = "";
-  };
-
-  const handleCropComplete = async (croppedImageBase64: string) => {
-    const type = croppingType;
-    setSelectedImage(null);
-    setCroppingType(null);
-    if (type === "logo") {
-      setIsUpdatingLogo(true);
+  const handleDelete = async (id: string) => {
+    if (confirmId === id) {
+      setDeletingId(id);
       try {
-        await axios.put("/api/system/settings", { panelLogo: croppedImageBase64 });
-        await fetchSettings();
-      } catch (err: any) {
-        alert(err.response?.data?.error || "Error updating logo");
+        await axios.delete(`/api/system/users/${id}`);
+        setUsers(prev => prev.filter(u => u.id !== id));
+      } catch (requestError: any) {
+        setError(requestError.response?.data?.error || 'Unable to revoke access.');
       } finally {
-        setIsUpdatingLogo(false);
+        setDeletingId(null);
+        setConfirmId(null);
       }
-    } else if (type === "background") {
-      setIsProcessing(true);
-      try {
-        await axios.put("/api/system/settings", { panelBackgroundImage: croppedImageBase64 });
-        await fetchSettings();
-      } catch (err: any) {
-        alert(err.response?.data?.error || "Error updating background");
-      } finally {
-        setIsProcessing(false);
-      }
+    } else {
+      setConfirmId(id);
     }
   };
 
-  const createUser = async (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsCreatingUser(true);
     try {
-      await axios.post("/api/system/users", { username, password, role });
-      setUsername("");
-      setPassword("");
-      fetchUsers();
-      alert("User created successfully");
-    } catch (e: any) {
-      alert(e.response?.data?.error || "Error creating user");
-    } finally {
-      setIsCreatingUser(false);
+      await axios.post('/api/system/users', { username: newUser, password: newPassword, role: newRole });
+      await fetchUsers();
+      setNewUser('');
+      setNewPassword('');
+      setNewRole('user');
+      setIsAdding(false);
+    } catch (requestError: any) {
+      setError(requestError.response?.data?.error || 'Unable to create user.');
     }
-  };
-
-  const changeUserPassword = async (id: string) => {
-    try {
-      if (adminUserNewPassword.length < 8) {
-         alert("Password must be at least 8 characters");
-         return;
-      }
-      await axios.put(`/api/system/users/${id}/password`, { newPassword: adminUserNewPassword });
-      alert("Password changed successfully");
-      setEditingUserId(null);
-      setAdminUserNewPassword("");
-      if (user.id === id) {
-        logout();
-      }
-    } catch(e: any) {
-      alert(e.response?.data?.error || "Error changing password");
-    }
-  };
-
-  const deleteUser = async (id: string) => {
-    try {
-      await axios.delete(`/api/system/users/${id}`);
-      fetchUsers();
-    } catch (e) {}
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="p-5 md:p-10 max-w-7xl mx-auto"
-    >
-      <div className="mb-10">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-2 drop-shadow-lg">Settings</h1>
-        <p className="text-indigo-400/80 font-bold uppercase tracking-widest text-sm mt-2">Configure your account and platform preferences.</p>
+    <div className="animate-in fade-in duration-500 max-w-4xl">
+      <div>
+        <h1 className="text-2xl font-dossier italic text-[#d6d1c4] mb-2">User Manifest</h1>
+        <p className="text-xs text-[#6b665c] tracking-widest uppercase mb-8">Active Entities</p>
       </div>
 
-      <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 md:p-10 mb-8 shadow-[0_0_50px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5 relative overflow-hidden">
-        {/* Subtle decorative glow */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[80px] rounded-full pointer-events-none" />
-        
-        <h2 className="text-xl font-bold mb-6 flex items-center text-white relative z-10">
-          <User className="mr-3 text-indigo-400 w-5 h-5" /> Account Details
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 mb-8">
-          <div className="bg-black/40 backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-[0_0_30px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5">
-            <p className="text-sm font-medium text-zinc-500 mb-1">Username</p>
-            <p className="text-lg font-semibold text-zinc-200">{user.username}</p>
-          </div>
-          <div className="bg-black/40 backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-[0_0_30px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5">
-            <p className="text-sm font-medium text-zinc-500 mb-1">Access Role</p>
-            <p className="text-lg font-semibold text-zinc-200 capitalize flex items-center gap-2">
-              {user.role}
-              {user.role === 'admin' && <Shield size={14} className="text-purple-400" />}
-            </p>
-          </div>
-        </div>
+      <div className="border border-[#231f20] bg-[#0c0b0b] shadow-2xl relative">
+        <div className="absolute inset-0 bg-[#d6d1c4] opacity-[0.02] pointer-events-none mix-blend-overlay"></div>
 
-        <div className="relative z-10 border-t border-white/5 pt-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Change Password</h3>
-          <form 
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (newPassword.length < 8) {
-                alert("Password must be at least 8 characters");
-                return;
-              }
-              setIsChangingPassword(true);
-              try {
-                await axios.put("/api/auth/password", { oldPassword, newPassword });
-                setOldPassword("");
-                setNewPassword("");
-                alert("Password changed successfully. You will be logged out.");
-                logout();
-              } catch (err: any) {
-                alert(err.response?.data?.error || "Error changing password");
-              } finally {
-                setIsChangingPassword(false);
-              }
-            }}
-            className="max-w-md"
+        <div className="p-6 border-b border-[#231f20] flex flex-col sm:flex-row sm:items-center justify-between bg-[#080707] gap-4">
+          <div>
+            <h2 className="text-[10px] text-[#6b665c] tracking-[0.2em]">MANIFEST // ALL_RECORDS</h2>
+            <div className="font-dossier italic text-[#a31515] mt-1 text-lg">{users.length} recorded. Proceed with caution.</div>
+          </div>
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="px-4 py-2 border border-[#231f20] bg-[#141212] text-[10px] tracking-[0.2em] text-[#d6d1c4] hover:text-white hover:border-[#6b665c] transition-colors flex items-center gap-2 self-start sm:self-auto"
           >
-            <div className="flex flex-col gap-3">
-              <input 
-                required 
-                value={oldPassword} 
-                onChange={e => setOldPassword(e.target.value)} 
-                type="password" 
-                placeholder="Current password"
-                className="w-full bg-white/[0.03] border border-white/10 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 rounded-xl px-4 py-2.5 text-white transition-all shadow-inner outline-none" 
-              />
-              <div className="flex gap-3">
-                <input 
-                  required 
-                  minLength={8}
-                  value={newPassword} 
-                  onChange={e => setNewPassword(e.target.value)} 
-                  type="password" 
-                  placeholder="New password (min 8 chars)"
-                  className="flex-1 bg-white/[0.03] border border-white/10 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 rounded-xl px-4 py-2.5 text-white transition-all shadow-inner outline-none" 
-                />
-                <button 
-                  type="submit" 
-                  disabled={isChangingPassword || user.username === "admin"}
-                  className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(99,102,241,0.3)] active:scale-[0.98] whitespace-nowrap"
-                >
-                  {isChangingPassword ? "Updating..." : "Update"}
-                </button>
-              </div>
-            </div>
-            {user.username === "admin" && (
-              <p className="text-xs text-red-400 mt-2">Default admin password cannot be changed.</p>
-            )}
-          </form>
-        </div>
-      </div>
-
-      {user.role === "admin" && (
-        <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 md:p-10 mb-8 shadow-[0_0_50px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/5 relative overflow-hidden">
-          <h2 className="text-xl font-bold mb-6 flex items-center text-white relative z-10">
-            <Layout className="mr-3 text-emerald-400 w-5 h-5" /> Platform Preferences
-          </h2>
-          <div className="flex flex-col md:flex-row flex-wrap gap-8 relative z-10">
-            <form 
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setIsSavingSettings(true);
-                try {
-                  await axios.put("/api/system/settings", { panelName: newPanelName, enablePlayit: newEnablePlayit });
-                  fetchSettings();
-                  alert("Settings updated successfully");
-                } catch (err: any) {
-                  alert(err.response?.data?.error || "Error updating settings");
-                } finally {
-                  setIsSavingSettings(false);
-                }
-              }}
-              className="flex-1 max-w-md"
-            >
-              <label className="block text-sm font-medium text-zinc-400 mb-1.5">Panel Name</label>
-              <div className="flex gap-3 mb-6">
-                <input 
-                  required 
-                  value={newPanelName} 
-                  onChange={e => setNewPanelName(e.target.value)} 
-                  type="text" 
-                  className="flex-1 bg-white/[0.03] border border-white/10 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 rounded-xl px-4 py-2.5 text-white transition-all shadow-inner outline-none" 
-                />
-                <button disabled={isSavingSettings} type="submit" className="bg-white text-zinc-900 hover:bg-zinc-200 font-semibold px-6 py-2.5 rounded-xl transition-all shadow-sm active:scale-[0.98] whitespace-nowrap disabled:opacity-50">
-                  {isSavingSettings ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </form>
-            
-            <div className="flex-1 max-w-sm">
-              <label className="block text-sm font-medium text-zinc-400 mb-1.5 flex items-center gap-2">
-                Features
-              </label>
-              <div className="flex flex-col gap-4 mt-2">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div className="relative flex items-center">
-                    <input 
-                      type="checkbox" 
-                      checked={newEnablePlayit} 
-                      onChange={async (e) => {
-                        const val = e.target.checked;
-                        setNewEnablePlayit(val);
-                        try {
-                          await axios.put("/api/system/settings", { enablePlayit: val });
-                          fetchSettings();
-                        } catch (err) {
-                          console.error(err);
-                        }
-                      }}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
-                  </div>
-                  <span className="text-sm font-medium text-zinc-300">Enable Playit Tunnel</span>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div className="relative flex items-center">
-                    <input 
-                      type="checkbox" 
-                      checked={newEnableTutorial} 
-                      onChange={async (e) => {
-                        const val = e.target.checked;
-                        setNewEnableTutorial(val);
-                        try {
-                          await axios.put("/api/system/settings", { enableTutorial: val });
-                          fetchSettings();
-                        } catch (err) {
-                          console.error(err);
-                        }
-                      }}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
-                  </div>
-                  <span className="text-sm font-medium text-zinc-300">Enable Onboarding Tutorial for New Users</span>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div className="relative flex items-center">
-                    <input 
-                      type="checkbox" 
-                      checked={newEnableLoginAnimation} 
-                      onChange={async (e) => {
-                        const val = e.target.checked;
-                        setNewEnableLoginAnimation(val);
-                        try {
-                          await axios.put("/api/system/settings", { enableLoginAnimation: val });
-                          fetchSettings();
-                        } catch (err) {
-                          console.error(err);
-                        }
-                      }}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
-                  </div>
-                  <span className="text-sm font-medium text-zinc-300">Enable Login Screen Cinematic Animation</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="flex-1 max-w-sm">
-              <label className="block text-sm font-medium text-zinc-400 mb-1.5">Panel Logo</label>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0 relative group">
-                  {panelLogo ? (
-                    <img src={panelLogo} alt="Panel Logo" className="w-full h-full object-cover" />
-                  ) : (
-                    <Layout className="w-8 h-8 text-zinc-600" />
-                  )}
-                  {panelLogo && (
-                    <button 
-                      onClick={async () => {
-                        try {
-                          await axios.put("/api/system/settings", { panelLogo: "" });
-                          fetchSettings();
-                        } catch(e) {}
-                      }}
-                      className="absolute inset-0 bg-red-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 size={18} className="text-white" />
-                    </button>
-                  )}
-                </div>
-                
-                <div className="flex-1">
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    ref={fileInputRef}
-                    onChange={(e) => handleFileChange(e, "logo")}
-                  />
-                  <button 
-                    disabled={isUpdatingLogo}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center justify-center w-full gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 font-semibold px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {isUpdatingLogo ? <div className="w-4 h-4 rounded-full border-2 border-indigo-400/50 border-t-indigo-400 animate-spin"></div> : <Upload size={18} />}
-                    {isUpdatingLogo ? "Updating..." : (panelLogo ? "Change Logo" : "Upload Logo")}
-                  </button>
-                  <p className="text-xs text-zinc-500 mt-2">Recommended: Square image, PNG or JPG.</p>
-                </div>
-              </div>
-            </div>
-
-            
-
-          </div>
-        </div>
-      )}
-
-      {user.role === "admin" && (
-        <div className="bg-black/20 backdrop-blur-xl border border-white/5 rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden mt-8">
-          <h2 className="text-xl font-bold mb-8 flex items-center text-white relative z-10">
-            <Layout className="mr-3 text-indigo-400 w-5 h-5" /> Background Configuration
-          </h2>
-          <div className="max-w-2xl relative z-10">
-            <div className="flex flex-col sm:flex-row gap-8">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-zinc-400 mb-4">Background Image</label>
-                <div className="w-full h-48 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center overflow-hidden relative group mb-4">
-                  {panelBackgroundImage ? (
-                    <img src={panelBackgroundImage} alt="Panel Background" className="w-full h-full object-cover" />
-                  ) : (
-                    <Layout className="w-12 h-12 text-zinc-600" />
-                  )}
-                  {panelBackgroundImage && (
-                    <button 
-                      onClick={async () => {
-                        try {
-                          await axios.put("/api/system/settings", { panelBackgroundImage: "" });
-                          fetchSettings();
-                        } catch(e) {}
-                      }}
-                      className="absolute inset-0 bg-red-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 size={24} className="text-white" />
-                    </button>
-                  )}
-                </div>
-                
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  ref={bgFileInputRef}
-                  onChange={(e) => handleFileChange(e, "background")}
-                />
-                <div className="flex flex-col gap-2">
-                  <button 
-                    onClick={() => bgFileInputRef.current?.click()}
-                    className="w-full flex items-center justify-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 font-semibold px-4 py-3 rounded-xl transition-all shadow-sm active:scale-[0.98]"
-                  >
-                    <Upload size={18} /> Upload Background Image
-                  </button>
-                  <button 
-                    onClick={async () => {
-                      setIsProcessing(true);
-                      try {
-                        await axios.put("/api/system/settings", { panelBackgroundImage: "" });
-                        await fetchSettings();
-                      } catch(e) {} finally {
-                        setIsProcessing(false);
-                      }
-                    }}
-                    className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 font-semibold px-4 py-3 rounded-xl transition-all shadow-sm active:scale-[0.98]"
-                  >
-                    <Layout size={18} /> Default Theme
-                  </button>
-                </div>
-                <p className="text-xs text-zinc-500 mt-3 text-center">Will be automatically scaled and cropped to fit 16:9 on desktop and 9:16 on mobile.</p>
-
-              </div>
-
-              <div className="flex-1 flex flex-col justify-center">
-                <label className="block text-xs font-bold text-indigo-300 uppercase tracking-widest mb-2 drop-shadow-sm">Background Blur: {tempBgBlur}px</label>
-                <p className="text-xs text-zinc-500 mb-6">Adjust the blur to make the text and UI elements more readable.</p>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="50" 
-                  value={tempBgBlur}
-                  onChange={(e) => setTempBgBlur(Number(e.target.value))}
-                  onMouseUp={async () => {
-                    setIsProcessing(true);
-                    try {
-                      await axios.put("/api/system/settings", { panelBackgroundBlur: tempBgBlur });
-                      await fetchSettings();
-                    } catch(e) {} finally {
-                      setIsProcessing(false);
-                    }
-                  }}
-                  onTouchEnd={async () => {
-                    setIsProcessing(true);
-                    try {
-                      await axios.put("/api/system/settings", { panelBackgroundBlur: tempBgBlur });
-                      await fetchSettings();
-                    } catch(e) {} finally {
-                      setIsProcessing(false);
-                    }
-                  }}
-                  className="w-full accent-indigo-500"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedImage && (
-        <ImageCropper
-          imageSrc={selectedImage}
-          onCropComplete={handleCropComplete}
-          onCancel={() => { setSelectedImage(null); setCroppingType(null); }}
-          aspectRatio={croppingType === "background" ? bgAspectRatio : 1}
-          title={croppingType === "background" ? "Crop Background" : "Crop Logo"}
-        />
-      )}
-
-      {user.role === "admin" && (
-        <div className="bg-[#0a0a0c] border border-white/5 rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
-          <h2 className="text-xl font-bold mb-8 flex items-center text-white relative z-10">
-            <Shield className="mr-3 text-purple-400 w-5 h-5" /> Administrator Controls
-          </h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
-            <div className="lg:col-span-4 lg:border-r border-white/5 lg:pr-8">
-              <h3 className="font-semibold text-sm uppercase tracking-wider text-zinc-500 mb-6">Provision Identity</h3>
-              <form onSubmit={createUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Username</label>
-                  <input required value={username} onChange={e=>setUsername(e.target.value)} type="text" className="w-full bg-white/[0.03] border border-white/10 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 rounded-xl px-4 py-2.5 text-white transition-all shadow-inner outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Password</label>
-                  <input required minLength={4} value={password} onChange={e=>setPassword(e.target.value)} type="password" className="w-full bg-white/[0.03] border border-white/10 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 rounded-xl px-4 py-2.5 text-white transition-all shadow-inner outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Role Privileges</label>
-                  <select value={role} onChange={e=>setRole(e.target.value)} className="w-full bg-white/[0.03] border border-white/10 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 rounded-xl px-4 py-2.5 text-white transition-all shadow-inner outline-none">
-                    <option value="user" className="bg-zinc-900">Standard User</option>
-                    <option value="admin" className="bg-zinc-900">Administrator</option>
-                  </select>
-                </div>
-                <button disabled={isCreatingUser} type="submit" className="w-full mt-2 bg-white text-zinc-900 hover:bg-zinc-200 font-semibold py-2.5 rounded-xl transition-all shadow-sm active:scale-[0.98] disabled:opacity-50">
-                  {isCreatingUser ? "Creating..." : "Create Identity"}
-                </button>
-              </form>
-            </div>
-
-            <div className="lg:col-span-8">
-               <h3 className="font-semibold text-sm uppercase tracking-wider text-zinc-500 mb-6 flex items-center justify-between">
-                <span>Active Identities ({users.length})</span>
-              </h3>
-               <div className="space-y-3">
-                 {users.map(u => (
-                   <div key={u.id} className="flex flex-col p-4 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.04] transition-colors">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-white flex items-center">
-                            {u.username}
-                            {u.id === user.id && <span className="ml-3 text-[10px] uppercase font-bold tracking-wider bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded border border-indigo-500/20">You</span>}
-                          </p>
-                          <p className={`text-xs mt-1 capitalize font-medium ${u.role === 'admin' ? 'text-purple-400' : 'text-zinc-500'}`}> 
-                            Role: {u.role}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          {u.id !== user.id && (
-                            <button onClick={() => {
-                              if (editingUserId === u.id) {
-                                setEditingUserId(null);
-                              } else {
-                                setEditingUserId(u.id);
-                                setAdminUserNewPassword("");
-                              }
-                            }} className="px-3 py-1.5 text-xs font-medium text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-lg transition-colors">
-                              {editingUserId === u.id ? "Cancel" : "Change Password"}
-                            </button>
-                          )}
-                          {u.id !== user.id && (
-                            <button onClick={() => deleteUser(u.id)} className="p-1.5 text-zinc-500 bg-white/[0.03] border border-transparent hover:border-red-500/30 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Revoke access">
-                              <Trash2 size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      {editingUserId === u.id && (
-                        <div className="mt-4 pt-4 border-t border-white/5 flex gap-3">
-                          <input 
-                            type="password" 
-                            placeholder="New Password (min 8 chars)" 
-                            value={adminUserNewPassword}
-                            onChange={(e) => setAdminUserNewPassword(e.target.value)}
-                            className="flex-1 bg-white/[0.03] border border-white/10 focus:border-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none"
-                          />
-                          <button 
-                            onClick={() => changeUserPassword(u.id)}
-                            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      )}
-                   </div>
-
-                 ))}
-               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {user.role === "admin" && (
-        <div className="bg-[#0a0a0c] border border-white/5 rounded-2xl p-6 md:p-8 shadow-xl mt-8">
-          <h2 className="text-xl font-bold mb-4 flex items-center text-white">
-            <RefreshCw className="mr-3 text-emerald-400 w-5 h-5" /> System Update
-          </h2>
-          <p className="text-zinc-400 text-sm mb-6 max-w-2xl">
-            Trigger an automatic update of the CodeZ. This will run git pull and rebuild the system. The panel will be unavailable for a few seconds during this process.
-          </p>
-          <button 
-            onClick={handleSystemUpdate}
-            disabled={isUpdatingSystem}
-            className="px-6 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-medium rounded-xl border border-emerald-500/20 transition-all shadow-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isUpdatingSystem ? "animate-spin" : ""}`} />
-            {isUpdatingSystem ? "Updating System..." : "Update Panel"}
+            {isAdding ? <X className="w-3 h-3" /> : <UserPlus className="w-3 h-3" />}
+            {isAdding ? 'ABORT' : 'ADD ENTRY'}
           </button>
         </div>
-      )}
 
-      {(isProcessing || isUpdatingLogo || isSavingSettings || isChangingPassword || isCreatingUser || isUpdatingSystem) && <LoadingOverlay />}
-    </motion.div>
+        {isAdding && (
+          <div className="p-6 border-b border-[#231f20] bg-[#141212] animate-in slide-in-from-top-2">
+            <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-4">
+              <input
+                autoFocus
+                type="text"
+                required
+                value={newUser}
+                onChange={e => setNewUser(e.target.value)}
+                placeholder="ENTER_NAME..."
+                className="flex-1 bg-[#050505] border border-[#231f20] px-4 py-3 text-sm text-[#d6d1c4] focus:outline-none focus:border-[#5c0a0a] focus:ring-1 focus:ring-[#5c0a0a] placeholder:text-[#6b665c] font-panel"
+              />
+              <input
+                required
+                minLength={8}
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="PASSWORD..."
+                className="flex-1 bg-[#050505] border border-[#231f20] px-4 py-3 text-sm text-[#d6d1c4] focus:outline-none focus:border-[#5c0a0a] focus:ring-1 focus:ring-[#5c0a0a] placeholder:text-[#6b665c] font-panel"
+              />
+              <select
+                value={newRole}
+                onChange={e => setNewRole(e.target.value)}
+                className="bg-[#050505] border border-[#231f20] px-3 py-3 text-xs text-[#d6d1c4] font-panel"
+              >
+                <option value="user">USER</option>
+                <option value="admin">ADMIN</option>
+                <option value="owner">OWNER</option>
+              </select>
+              <button type="submit" className="px-8 py-3 bg-[#141212] border border-[#5c0a0a] text-[#a31515] text-[10px] tracking-[0.2em] hover:bg-[#5c0a0a]/30 transition-colors">
+                COMMIT
+              </button>
+            </form>
+          </div>
+        )}
+
+        <div className="divide-y divide-[#231f20]/50 relative z-10">
+          {error && <div className="p-4 text-xs text-[#d6d1c4] border-b border-[#5c0a0a] bg-[#5c0a0a]/10">{error}</div>}
+          {users.map((manifestUser, idx) => (
+            <div key={manifestUser.id} className={`p-4 px-6 flex flex-col sm:flex-row sm:items-center justify-between group transition-all duration-300 ${deletingId === manifestUser.id ? 'opacity-0 translate-x-4' : 'opacity-100'} hover:bg-[#141212]/50 gap-4`}>
+               <div className={`flex items-center gap-4 sm:gap-6 ${confirmId === manifestUser.id ? 'animate-pulse' : ''}`}>
+                  <div className="text-[#6b665c] text-[10px] w-6 tracking-widest">{(idx + 1).toString().padStart(2, '0')}</div>
+
+                   <div className={`font-dossier text-2xl tracking-wide ${confirmId === manifestUser.id ? 'text-[#a31515]' : 'text-[#d6d1c4]'} ${deletingId === manifestUser.id ? 'animate-strike' : ''}`}>
+                     {manifestUser.username}
+                  </div>
+
+                  <div className="text-[9px] tracking-[0.2em] px-2 py-1 bg-[#050505] border border-[#231f20] text-[#6b665c]">
+                     {manifestUser.role}
+                  </div>
+               </div>
+
+               <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto mt-2 sm:mt-0 pl-10 sm:pl-0">
+                  <div className="text-[10px] text-[#6b665c] tracking-widest">
+                     STATUS: <span className="text-[#a31515]">ACTIVE</span>
+                  </div>
+
+                   {manifestUser.id === user?.id ? (
+                     <span className="text-[10px] tracking-[0.2em] text-[#6b665c]">CURRENT_OPERATOR</span>
+                   ) : confirmId === manifestUser.id ? (
+                     <button
+                        onClick={() => handleDelete(manifestUser.id)}
+                       className="text-[10px] tracking-[0.2em] text-[#a31515] border border-[#5c0a0a] px-4 py-2 bg-[#141212] hover:bg-[#5c0a0a]/30 transition-colors"
+                     >
+                       CONFIRM ELIMINATION
+                     </button>
+                  ) : (
+                     <button
+                        onClick={() => handleDelete(manifestUser.id)}
+                       className="text-[#6b665c] hover:text-[#a31515] transition-colors p-2 sm:opacity-0 group-hover:opacity-100"
+                       title="Eliminate"
+                     >
+                       <X className="w-5 h-5" />
+                     </button>
+                  )}
+               </div>
+            </div>
+          ))}
+          <div className="p-5 text-center text-[10px] text-[#6b665c] tracking-[0.3em] bg-[#050505] border-t border-[#231f20]">
+             LIVE ACCESS RECORDS
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AccessControl() {
+  const { user, logout } = useAuth();
+  const [showPass, setShowPass] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [passcodes, setPasscodes] = useState({ current: '', new: '' });
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetting(true);
+    setError('');
+    try {
+      await axios.put('/api/auth/password', {
+        oldPassword: passcodes.current,
+        newPassword: passcodes.new,
+      });
+      setResetting(false);
+      setShowPass(false);
+      setPasscodes({ current: '', new: '' });
+      setTimeout(() => logout(), 700);
+    } catch (requestError: any) {
+      setResetting(false);
+      setError(requestError.response?.data?.error || 'Passcode modification failed.');
+    }
+  };
+
+  return (
+    <div className="animate-in fade-in duration-500 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-dossier italic text-[#d6d1c4] mb-2">Access Control</h1>
+        <p className="text-xs text-[#6b665c] tracking-widest uppercase mb-8">Security & Authentication</p>
+      </div>
+
+      <div className="border border-[#231f20] bg-[#0c0b0b] p-8 relative shadow-2xl overflow-hidden">
+        <div className="absolute top-8 right-8 border-2 border-[#5c0a0a]/20 text-[#5c0a0a]/20 p-2 transform rotate-[15deg] text-xl font-dossier italic tracking-widest pointer-events-none select-none">
+          RESTRICTED
+        </div>
+
+        <div className="mb-10 relative z-10">
+          <h2 className="text-[10px] text-[#6b665c] tracking-[0.2em] mb-1">SECURITY // CREDENTIALS</h2>
+          <div className="font-dossier italic text-[#d6d1c4] text-lg">Maintain absolute secrecy.</div>
+        </div>
+
+        <div className="space-y-10 relative z-10">
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+              <div>
+                <div className="text-sm text-[#d6d1c4] font-panel">Passcode Modification</div>
+                <div className="text-xs text-[#6b665c] mt-1">Last changed 42 days ago</div>
+              </div>
+              <button
+                onClick={() => setShowPass(!showPass)}
+                className="px-5 py-2 border border-[#231f20] bg-[#141212] text-[10px] tracking-[0.2em] text-[#d6d1c4] hover:text-white hover:border-[#6b665c] transition-colors self-start sm:self-auto"
+              >
+                {showPass ? 'ABORT' : 'MODIFY'}
+              </button>
+            </div>
+
+             {error && <div className="mb-4 border border-[#5c0a0a] bg-[#5c0a0a]/10 p-3 text-xs text-[#d6d1c4]">{error}</div>}
+             {showPass && (
+              <form onSubmit={handleSubmit} className="space-y-5 mt-6 p-6 border border-[#231f20] bg-[#050505] animate-in slide-in-from-top-2">
+                <div>
+                  <label className="block text-[10px] text-[#6b665c] tracking-[0.2em] mb-3">CURRENT PASSCODE</label>
+                  <div className="relative">
+                     <Lock className="absolute left-4 top-3 w-4 h-4 text-[#6b665c]" />
+                     <input
+                       type="password"
+                       required
+                       value={passcodes.current}
+                       onChange={e => setPasscodes({...passcodes, current: e.target.value})}
+                       className="w-full bg-[#141212] border border-[#231f20] px-12 py-3 text-sm text-[#d6d1c4] focus:outline-none focus:border-[#5c0a0a] font-panel transition-colors"
+                     />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[#6b665c] tracking-[0.2em] mb-3">NEW PASSCODE</label>
+                  <div className="relative">
+                     <Lock className="absolute left-4 top-3 w-4 h-4 text-[#6b665c]" />
+                     <input
+                       type="password"
+                       required
+                       value={passcodes.new}
+                       onChange={e => setPasscodes({...passcodes, new: e.target.value})}
+                       className="w-full bg-[#141212] border border-[#231f20] px-12 py-3 text-sm text-[#d6d1c4] focus:outline-none focus:border-[#5c0a0a] font-panel transition-colors"
+                     />
+                  </div>
+                </div>
+                 <button type="submit" disabled={resetting || user?.username === 'admin'} className="w-full mt-4 px-6 py-3 bg-[#141212] border border-[#5c0a0a] text-[#a31515] text-[10px] tracking-[0.2em] hover:bg-[#5c0a0a]/30 transition-all disabled:opacity-50">
+                  {resetting ? <span className="animate-pulse">ENCRYPTING...</span> : 'CONFIRM MODIFICATION'}
+                </button>
+                 {user?.username === 'admin' && <p className="mt-3 text-xs text-[#a31515]">The default admin password cannot be changed.</p>}
+              </form>
+            )}
+          </div>
+
+          <div className="pt-8 border-t border-[#231f20]">
+             <div className="text-sm text-[#d6d1c4] font-panel mb-6">Multi-Factor Authentication</div>
+             <div className="flex flex-col sm:flex-row sm:items-center gap-6 p-6 border border-[#231f20] bg-[#050505]">
+               <div className="w-12 h-12 flex items-center justify-center border border-[#231f20] bg-[#141212] shrink-0">
+                 <Shield className="w-5 h-5 text-[#6b665c]" />
+               </div>
+               <div>
+                  <div className="text-[10px] text-[#6b665c] tracking-[0.2em]">STATUS: <span className="text-[#a31515]">INACTIVE</span></div>
+                  <div className="text-xs text-[#6b665c] mt-2">Enable to prevent unauthorized access.</div>
+               </div>
+               <button className="sm:ml-auto px-6 py-3 border border-[#231f20] bg-[#141212] text-[#d6d1c4] text-[10px] tracking-[0.2em] hover:text-white hover:border-[#6b665c] transition-colors w-full sm:w-auto">
+                 ENABLE
+               </button>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ToggleRow({ label, desc, checked, onChange }: { label: string, desc: string, checked: boolean, onChange: () => void }) {
+  return (
+    <div className="flex items-center justify-between group cursor-pointer" onClick={onChange}>
+      <div className="pr-4">
+        <div className="text-sm text-[#d6d1c4] font-panel">{label}</div>
+        <div className="text-xs text-[#6b665c] mt-1">{desc}</div>
+      </div>
+      <button
+        className={`w-12 h-6 rounded-full p-1 transition-colors relative border shrink-0 ${checked ? 'bg-[#5c0a0a] border-[#a31515]' : 'bg-[#050505] border-[#231f20]'}`}
+      >
+        <div className={`w-4 h-4 rounded-full bg-[#d6d1c4] transition-transform ${checked ? 'translate-x-6 bg-white' : 'translate-x-0'}`}></div>
+      </button>
+    </div>
+  )
+}
+
+function PanelConfig() {
+  const {
+    panelName,
+    enablePlayit,
+    enableTutorial,
+    enableLoginAnimation,
+    panelBackgroundBlur,
+    fetchSettings,
+  } = useSettings();
+  const [name, setName] = useState(panelName);
+  const [playit, setPlayit] = useState(enablePlayit);
+  const [tutorial, setTutorial] = useState(enableTutorial);
+  const [loginAnim, setLoginAnim] = useState(enableLoginAnimation);
+  const [blur, setBlur] = useState(panelBackgroundBlur > 0);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setName(panelName);
+    setPlayit(enablePlayit);
+    setTutorial(enableTutorial);
+    setLoginAnim(enableLoginAnimation);
+    setBlur(panelBackgroundBlur > 0);
+  }, [panelName, enablePlayit, enableTutorial, enableLoginAnimation, panelBackgroundBlur]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await axios.put('/api/system/settings', {
+        panelName: name,
+        enablePlayit: playit,
+        enableTutorial: tutorial,
+        enableLoginAnimation: loginAnim,
+        panelBackgroundBlur: blur ? 10 : 0,
+      });
+      await fetchSettings();
+      setSaving(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="animate-in fade-in duration-500 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-dossier italic text-[#d6d1c4] mb-2">Panel Configuration</h1>
+        <p className="text-xs text-[#6b665c] tracking-widest uppercase mb-8">Interface & Experience</p>
+      </div>
+
+      <div className="border border-[#231f20] bg-[#0c0b0b] p-8 shadow-2xl">
+        <div className="mb-10">
+          <h2 className="text-[10px] text-[#6b665c] tracking-[0.2em] mb-1">CONFIG // INTERFACE</h2>
+          <div className="font-dossier italic text-[#d6d1c4] text-lg">Modify perceptual parameters.</div>
+        </div>
+
+         <div className="space-y-8">
+           <div className="border-b border-[#231f20] pb-8">
+             <label className="block text-[10px] text-[#6b665c] tracking-[0.2em] mb-3">PANEL DESIGNATION</label>
+             <input
+               value={name}
+               onChange={e => setName(e.target.value)}
+               className="w-full bg-[#050505] border border-[#231f20] px-4 py-3 text-sm text-[#d6d1c4] focus:outline-none focus:border-[#5c0a0a] font-panel"
+             />
+           </div>
+          <ToggleRow
+            label="Onboarding Tutorial"
+            desc="Display initial guidance for new operators."
+             checked={tutorial}
+             onChange={() => setTutorial(value => !value)}
+          />
+          <ToggleRow
+            label="Login Animation"
+            desc="Execute graphical sequence upon authentication."
+             checked={loginAnim}
+             onChange={() => setLoginAnim(value => !value)}
+          />
+          <ToggleRow
+            label="Background Blur"
+            desc="Apply perceptual isolation to the interface backdrop."
+             checked={blur}
+             onChange={() => setBlur(value => !value)}
+           />
+           <ToggleRow
+             label="Playit Tunnel"
+             desc="Allow tunnel controls for Minecraft instances."
+             checked={playit}
+             onChange={() => setPlayit(value => !value)}
+          />
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-[#231f20] flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={saving || saved}
+            className={`px-8 py-3 text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-3 w-full sm:w-48 ${
+              saved
+                ? 'bg-[#141212] text-[#d6d1c4] border border-[#6b665c]'
+                : 'bg-[#141212] text-[#a31515] border border-[#5c0a0a] hover:bg-[#5c0a0a]/30'
+            }`}
+          >
+            {saving ? (
+              <span className="animate-pulse">COMMITTING...</span>
+            ) : saved ? (
+              <><Check className="w-4 h-4" /> COMMITTED</>
+            ) : (
+              'COMMIT CHANGES'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function DeathnoteSettings() {
+  const { panelBackgroundBlur } = useSettings();
+  const [activeTab, setActiveTab] = useState('system');
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-[#d6d1c4] font-panel selection:bg-[#a31515]/30 overflow-hidden flex flex-col md:flex-row relative">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;700&display=swap');
+        .font-dossier { font-family: 'Crimson Pro', serif; }
+        .font-panel { font-family: 'JetBrains Mono', monospace; }
+
+        .crt-overlay {
+          background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+          background-size: 100% 4px, 6px 100%;
+          pointer-events: none;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #050505; border-left: 1px solid #231f20; }
+        ::-webkit-scrollbar-thumb { background: #231f20; }
+        ::-webkit-scrollbar-thumb:hover { background: #5c0a0a; }
+
+        @keyframes strike {
+          0% { width: 0; }
+          100% { width: 100%; }
+        }
+        .animate-strike {
+          position: relative;
+          display: inline-block;
+        }
+        .animate-strike::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 0;
+          width: 100%;
+          height: 2px;
+          background: #a31515;
+          animation: strike 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+      `}</style>
+
+      {/* Grid Background */}
+      <div className="absolute inset-0 z-0 flex flex-col pointer-events-none overflow-hidden">
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#231f20 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+        {panelBackgroundBlur > 0 && (
+          <div className="absolute inset-0 backdrop-blur-[3px] bg-[#050505]/40 transition-all duration-700"></div>
+        )}
+      </div>
+
+      <div className="fixed inset-0 z-50 crt-overlay mix-blend-overlay pointer-events-none"></div>
+
+      {/* Sidebar */}
+      <aside className="w-full md:w-72 md:h-screen border-r border-[#231f20] bg-[#080707]/90 backdrop-blur-md z-20 flex flex-col relative shadow-[4px_0_24px_rgba(0,0,0,0.5)] flex-shrink-0">
+        <div className="p-6 border-b border-[#231f20]">
+          <div className="text-[#a31515] text-[10px] font-bold tracking-[0.3em] mb-2">CODEZ // CONTROL</div>
+          <div className="font-dossier text-2xl text-[#d6d1c4]">Operator:<br/><span className="italic text-white">Light Yagami</span></div>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-1 overflow-x-auto flex md:flex-col items-center md:items-stretch">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex-shrink-0 md:flex-shrink flex items-center gap-4 px-4 py-3 text-xs tracking-widest transition-all ${activeTab === tab.id ? 'bg-[#141212] text-[#a31515] border-b-2 md:border-b-0 md:border-l-2 border-[#a31515]' : 'text-[#6b665c] hover:text-[#d6d1c4] hover:bg-[#141212]/50 border-b-2 md:border-b-0 md:border-l-2 border-transparent'}`}
+            >
+              <tab.icon className="w-4 h-4 hidden sm:block" />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-6 border-t border-[#231f20] text-[10px] text-[#6b665c] font-panel hidden md:block">
+          <div className="flex justify-between mb-1"><span>SYS.ID:</span> <span>0x99FA</span></div>
+          <div className="flex justify-between mb-1"><span>UPTIME:</span> <span className="text-[#d6d1c4]">99.9%</span></div>
+          <div className="flex justify-between"><span>LINK:</span> <span className="text-[#a31515] animate-pulse">SECURE</span></div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 relative z-10 h-full overflow-y-auto">
+        <div className="max-w-6xl mx-auto p-6 md:p-8 lg:p-12 min-h-full flex flex-col">
+          {activeTab === 'system' && <SystemStatus />}
+          {activeTab === 'users' && <UserManifest />}
+          {activeTab === 'security' && <AccessControl />}
+          {activeTab === 'panel' && <PanelConfig />}
+        </div>
+      </main>
+    </div>
   );
 }

@@ -62,7 +62,7 @@ install_panel() {
         return
     fi
 
-    git clone https://github.com/srivastavatanmay521-alt/Codez CodeZ
+    git clone --branch main --single-branch https://github.com/srivastavatanmay521-alt/Codez CodeZ
     if [ $? -ne 0 ]; then
         echo -e "${RED}[✗] git clone failed! Check your internet connection.${NC}"
         return 1

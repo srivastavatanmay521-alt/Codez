@@ -20,6 +20,7 @@ import {
   Network,
   Wrench,
   Feather,
+  Bot,
   CheckCircle2
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -32,6 +33,7 @@ export default function CreateServer() {
     { id: "BUNGEECORD", name: "BungeeCord", desc: "Classic Proxy", icon: Network, color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20", activeRing: "ring-orange-500/50", glow: "to-orange-500/10" },
     { id: "FORGE", name: "Forge", desc: "Modded Minecraft", icon: Wrench, color: "text-stone-400", bg: "bg-stone-400/10", border: "border-stone-400/20", activeRing: "ring-stone-500/50", glow: "to-stone-500/10" },
     { id: "FABRIC", name: "Fabric", desc: "Lightweight Mods", icon: Feather, color: "text-amber-200", bg: "bg-amber-200/10", border: "border-amber-200/20", activeRing: "ring-amber-300/50", glow: "to-amber-300/10" },
+    { id: "DISCORD_BOT", name: "Discord Bot", desc: "Node.js bot hosting", icon: Bot, color: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400/20", activeRing: "ring-violet-500/50", glow: "to-violet-500/10" },
   ];
 
   const [name, setName] = useState("");
@@ -50,6 +52,7 @@ export default function CreateServer() {
   const [totalSystemRam, setTotalSystemRam] = useState<number>(0);
   const [showRamWarning, setShowRamWarning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [botEntrypoint, setBotEntrypoint] = useState("index.js");
 
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -133,6 +136,7 @@ export default function CreateServer() {
         ipAlias,
         type,
         version,
+        botEntrypoint: type === "DISCORD_BOT" ? botEntrypoint : undefined,
       };
       if (owner) payload.owner = owner;
 
@@ -161,7 +165,11 @@ export default function CreateServer() {
           <ArrowLeft size={16} className="mr-2" /> Back to Instances
         </Link>
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2">Deploy Instance</h1>
-        <p className="text-zinc-400">Configure parameters for a new Minecraft container.</p>
+        <p className="text-zinc-400">
+          {type === "DISCORD_BOT"
+            ? "Deploy an isolated Node.js runtime for your Discord bot."
+            : "Configure parameters for a new Minecraft container."}
+        </p>
       </div>
       
       <form onSubmit={handleSubmit} className="bg-[#0a0a0c] p-6 md:p-8 rounded-2xl border border-white/5 shadow-2xl relative">
@@ -257,11 +265,15 @@ export default function CreateServer() {
               </label>
               <input 
                 type="number" 
-                required 
+                required={type !== "DISCORD_BOT"}
                 value={port} 
+                disabled={type === "DISCORD_BOT"}
                 onChange={e => { setPort(e.target.value); setError(null); }} 
                 className={`w-full bg-white/[0.02] border focus:ring-1 rounded-xl px-4 py-3 text-white transition-all shadow-inner outline-none font-mono ${error?.includes("Port") ? "border-red-500 focus:border-red-500 focus:ring-red-500/50" : "border-white/10 focus:border-indigo-500 focus:ring-indigo-500/50"}`}
               />
+              {type === "DISCORD_BOT" && (
+                <p className="mt-2 text-xs text-zinc-500">Discord bots connect outbound to Discord and do not need an exposed port.</p>
+              )}
               {error?.includes("Port") && (
                 <p className="mt-2 text-sm text-red-400 flex items-center">
                   <AlertTriangle className="w-4 h-4 mr-1.5" />
@@ -332,6 +344,25 @@ export default function CreateServer() {
               })}
             </div>
           </div>
+
+          {type === "DISCORD_BOT" && (
+            <div className="md:col-span-2 relative z-10 rounded-2xl border border-violet-400/20 bg-violet-400/5 p-5">
+              <label className="block text-sm font-medium text-zinc-300 mb-2 flex items-center">
+                <Bot className="w-4 h-4 mr-2 text-violet-400" /> Bot entry file
+              </label>
+              <input
+                type="text"
+                required
+                value={botEntrypoint}
+                onChange={e => setBotEntrypoint(e.target.value)}
+                placeholder="index.js"
+                className="w-full bg-black/20 border border-white/10 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 rounded-xl px-4 py-3 text-white transition-all shadow-inner outline-none font-mono"
+              />
+              <p className="text-xs text-zinc-500 mt-2">
+                Upload this file, your package.json, and your .env through File Manager after deployment.
+              </p>
+            </div>
+          )}
 
           <div className="md:col-span-2 relative z-10">
             <label className="block text-sm font-medium text-zinc-300 mb-2 flex items-center">

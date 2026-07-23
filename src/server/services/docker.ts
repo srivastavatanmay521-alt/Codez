@@ -13,6 +13,9 @@ const mockState: Record<string, boolean> = {};
 
 export const getVersions = async (type: string = "PAPER") => {
   const normalizedType = type.toUpperCase();
+  if (normalizedType === "DISCORD_BOT") {
+    return ["node22"];
+  }
   if (normalizedType === "VELOCITY") {
     return ["latest", "3.3.0-SNAPSHOT"];
   }
@@ -39,8 +42,11 @@ export const createServerContainer = async (serverData: any) => {
   }
 
   const serverType = serverData.type || "PAPER";
+  const isDiscordBot = serverType.toUpperCase() === "DISCORD_BOT";
   const isProxy = ["VELOCITY", "BUNGEECORD", "WATERFALL"].includes(serverType.toUpperCase());
-  const dockerImage = isProxy
+  const dockerImage = isDiscordBot
+    ? "node:22-bookworm-slim"
+    : isProxy
     ? "itzg/bungeecord" 
     : "itzg/minecraft-server";
 
@@ -61,15 +67,17 @@ export const createServerContainer = async (serverData: any) => {
   const serverDir = path.join(process.cwd(), ".data", "servers", serverData.id);
   await fs.ensureDir(serverDir);
 
-  const envVars = [
-    `TYPE=${serverType}`,
-    `VERSION=${serverData.version}`,
-    `MEMORY=${serverData.ram}G`,
-    `INIT_MEMORY=128M`,
-    `SERVER_PORT=${serverData.port}`,
-  ];
+  const envVars = isDiscordBot
+    ? ["NODE_ENV=production"]
+    : [
+        `TYPE=${serverType}`,
+        `VERSION=${serverData.version}`,
+        `MEMORY=${serverData.ram}G`,
+        `INIT_MEMORY=128M`,
+        `SERVER_PORT=${serverData.port}`,
+      ];
 
-  if (!isProxy) {
+  if (!isProxy && !isDiscordBot) {
     envVars.push(
       `EULA=TRUE`,
       `ENABLE_RCON=true`,
@@ -79,27 +87,40 @@ export const createServerContainer = async (serverData: any) => {
     );
   }
 
-  const container = await docker.createContainer({
+  const botEntrypoint = String(serverData.botEntrypoint || "index.js")
+    .replace(/[^a-zA-Z0-9_./-]/g, "");
+  const botCommand = `if [ -f package.json ]; then npm install --omit=dev; fi; exec node ${botEntrypoint || "index.js"}`;
+  const containerConfig: Docker.ContainerCreateOptions = {
     Image: dockerImage,
     name: `jtg-server-${serverData.id}`,
     Tty: true,
     OpenStdin: true,
     StdinOnce: false,
     Env: envVars,
-    ExposedPorts: {
-      [`${serverData.port}/tcp`]: {}
-    },
     HostConfig: {
-      PortBindings: {
-        [`${serverData.port}/tcp`]: [
-          {
-            HostPort: `${serverData.port}`
-          }
-        ]
-      },
-      Binds: [`${serverDir}:${isProxy ? '/server' : '/data'}`]
+      Memory: Math.max(1, Number(serverData.ram) || 1) * 1024 * 1024 * 1024,
+      NanoCpus: Math.max(1, Number(serverData.cpu) || 100) * 10_000_000,
+      Binds: [`${serverDir}:${isDiscordBot ? "/app" : isProxy ? "/server" : "/data"}`]
     }
-  });
+  };
+
+  if (isDiscordBot) {
+    containerConfig.WorkingDir = "/app";
+    containerConfig.Cmd = ["sh", "-lc", botCommand];
+  } else {
+    containerConfig.ExposedPorts = {
+      [`${serverData.port}/tcp`]: {}
+    };
+    containerConfig.HostConfig!.PortBindings = {
+      [`${serverData.port}/tcp`]: [
+        {
+          HostPort: `${serverData.port}`
+        }
+      ]
+    };
+  }
+
+  const container = await docker.createContainer(containerConfig);
 
   return container.id;
 };
@@ -118,7 +139,15 @@ export const startContainer = async (containerId: string) => {
         await fs.ensureDir(serverDir);
         const type = (server.type || "PAPER").toUpperCase();
         
-        if (["VELOCITY", "BUNGEECORD", "WATERFALL"].includes(type)) {
+        if (type === "DISCORD_BOT") {
+          const readmePath = path.join(serverDir, "UPLOAD_BOT_FILES_HERE.txt");
+          if (!fs.existsSync(readmePath)) {
+            await fs.writeFile(
+              readmePath,
+              "Upload your Discord bot files and .env here, then start the bot from CodeZ.\n"
+            );
+          }
+        } else if (["VELOCITY", "BUNGEECORD", "WATERFALL"].includes(type)) {
           const configName = type === "VELOCITY" ? "velocity.toml" : "config.yml";
           const configPath = path.join(serverDir, configName);
           if (!fs.existsSync(configPath)) {

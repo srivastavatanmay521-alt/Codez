@@ -23,6 +23,7 @@ import { TutorialOverlay } from "./components/TutorialOverlay";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return (
     <div className="h-[100dvh] w-full flex items-center justify-center bg-transparent text-white">
       <motion.div
@@ -33,6 +34,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     </div>
   );
   if (!user) return <Navigate to="/login" />;
+  if (location.pathname === "/settings") return <>{children}</>;
   return <Layout>{children}</Layout>;
 };
 
