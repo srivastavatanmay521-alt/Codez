@@ -1,102 +1,109 @@
 #!/bin/bash
 
-# Set colors for a better-looking menu
+# Colors for terminal output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
-# Function to install the panel
 install_panel() {
-    echo -e "\n${CYAN}[+] Installing dependencies... Please wait...${NC}"
-    
-    # Update system package index
-    sudo apt update
-    
-    # Install curl
-    sudo apt install curl -y
-    
-    # Setup and install Node.js 20.x
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt install -y nodejs 
-    
-    # Install PM2 globally
-    sudo npm install -g pm2
+    echo -e "\n${CYAN}╔══════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║      Installing CodeZ Dependencies   ║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════╝${NC}\n"
 
-    echo -e "\n${CYAN}[+] Downloading and setting up CodeZ...${NC}"
-    
-    # Check if the CodeZ folder already exists
+    echo -e "${PURPLE}[→] Updating system packages...${NC}"
+    sudo apt update -qq
+
+    echo -e "${PURPLE}[→] Installing curl & git...${NC}"
+    sudo apt install curl git -y -qq
+
+    echo -e "${PURPLE}[→] Setting up Node.js 20.x...${NC}"
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - >/dev/null 2>&1
+    sudo apt install -y nodejs -qq
+
+    echo -e "${PURPLE}[→] Installing PM2 process manager...${NC}"
+    sudo npm install -g pm2 --silent
+
+    echo -e "\n${CYAN}[→] Cloning CodeZ panel from GitHub...${NC}"
+
     if [ -d "CodeZ" ]; then
-        echo -e "${YELLOW}[!] The 'CodeZ' folder already exists. Please delete it first or use the update option (Option 2).${NC}"
+        echo -e "${YELLOW}[!] 'CodeZ' folder already exists.${NC}"
+        echo -e "${YELLOW}    Delete it first, or choose Update (Option 2).${NC}"
         return
     fi
 
-    # Clone from GitHub
-    git clone https://github.com/JishnuTheGamer/Jtg CodeZ
-    
-    # Navigate into the directory
-    cd CodeZ || { echo -e "${RED}[!] Failed to enter the directory!${NC}"; return; }
-    
-    # Install node modules
-    npm i 
-    
-    # Create user and build
+    git clone https://github.com/srivastavatanmay521-alt/Codez CodeZ
+
+    cd CodeZ || { echo -e "${RED}[✗] Failed to enter directory!${NC}"; return; }
+
+    echo -e "${PURPLE}[→] Installing node modules...${NC}"
+    npm install
+
+    echo -e "${PURPLE}[→] Creating admin user...${NC}"
     npm run createuser
+
+    echo -e "${PURPLE}[→] Building panel (this may take a moment)...${NC}"
     npm run build
-    
-    # Start with PM2
+
+    echo -e "${PURPLE}[→] Starting with PM2...${NC}"
     pm2 start ecosystem.config.cjs
-    
-    echo -e "\n${GREEN}==========================================${NC}"
-    echo -e "${GREEN} [✓] Panel successfully installed and started!${NC}"
-    echo -e "${GREEN} MADE BY - VOID  | panel info  [Online] ${NC}"
-    echo -e "${GREEN}==========================================${NC}"
-    
-    # Return to the main directory
+    pm2 save
+
+    echo -e "\n${GREEN}╔══════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║  ✓  CodeZ Panel installed successfully!  ║${NC}"
+    echo -e "${GREEN}║     CodeZ | Game Server Management       ║${NC}"
+    echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
+
     cd ..
 }
 
-# Function to update the panel
 update_panel() {
-    echo -e "\n${CYAN}[+] Updating the panel...${NC}"
-    
-    # Check if the CodeZ folder exists
+    echo -e "\n${CYAN}╔══════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║         Updating CodeZ Panel         ║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════╝${NC}\n"
+
     if [ -d "CodeZ" ]; then
-        cd CodeZ || { echo -e "${RED}[!] Failed to enter the directory!${NC}"; return; }
-        
-        # Fetch new updates from GitHub
+        cd CodeZ || { echo -e "${RED}[✗] Failed to enter directory!${NC}"; return; }
+
+        echo -e "${PURPLE}[→] Fetching latest updates from GitHub...${NC}"
         git stash
         git pull
-        
-        # Update packages and rebuild
-        npm i 
-        npm run build 
-        
-        # Restart PM2 processes
+
+        echo -e "${PURPLE}[→] Installing updated dependencies...${NC}"
+        npm install
+
+        echo -e "${PURPLE}[→] Rebuilding panel...${NC}"
+        npm run build
+
+        echo -e "${PURPLE}[→] Restarting services...${NC}"
         pm2 restart all
-        
-        echo -e "\n${GREEN}[✓] Panel successfully updated and restarted!${NC}"
-        
-        # Return to the main directory
+        pm2 save
+
+        echo -e "\n${GREEN}╔══════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║   ✓  CodeZ Panel updated & restarted!   ║${NC}"
+        echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
+
         cd ..
     else
-        echo -e "${RED}[!] 'CodeZ' directory not found! Please install the panel first (Option 1).${NC}"
+        echo -e "${RED}[✗] 'CodeZ' directory not found!${NC}"
+        echo -e "${RED}    Please install the panel first (Option 1).${NC}"
     fi
 }
 
 # Main menu loop
 while true; do
-    echo -e "\n${YELLOW}========================================${NC}"
-    echo -e "${GREEN}         CodeZ PANEL MANAGER MENU       ${NC}"
-    echo -e "${YELLOW}========================================${NC}"
-    echo -e "${CYAN}1.${NC} Install Panel (Auto Setup)"
-    echo -e "${CYAN}2.${NC} Update Panel"
-    echo -e "${RED}3.${NC} Exit"
-    echo -e "${YELLOW}========================================${NC}"
-    
-    read -p "Choose an option (1/2/3): " choice
+    echo -e "\n${PURPLE}╔══════════════════════════════════════╗${NC}"
+    echo -e "${PURPLE}║   ░▒▓█  CodeZ Panel Manager  █▓▒░   ║${NC}"
+    echo -e "${PURPLE}╚══════════════════════════════════════╝${NC}"
+    echo -e "  ${CYAN}[1]${NC} Install Panel"
+    echo -e "  ${CYAN}[2]${NC} Update Panel"
+    echo -e "  ${RED}[3]${NC} Exit"
+    echo -e "${PURPLE}════════════════════════════════════════${NC}"
+
+    read -p "  Choose an option (1/2/3): " choice
 
     case $choice in
         1)
@@ -106,7 +113,7 @@ while true; do
             update_panel
             ;;
         3)
-            echo -e "${YELLOW}Exiting script... Goodbye!${NC}"
+            echo -e "${YELLOW}Goodbye!${NC}"
             exit 0
             ;;
         *)
