@@ -23,6 +23,7 @@ import { TutorialOverlay } from "./components/TutorialOverlay";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return (
     <div className="h-[100dvh] w-full flex items-center justify-center bg-transparent text-white">
       <motion.div
@@ -33,6 +34,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     </div>
   );
   if (!user) return <Navigate to="/login" />;
+  if (location.pathname === "/settings") return <>{children}</>;
   return <Layout>{children}</Layout>;
 };
 
@@ -72,9 +74,9 @@ const TutorialManager = () => {
 
     const isDev = process.env.NODE_ENV === 'development';
     const tutorialKey = isDev ? `tutorialShown_dev_${user.id}` : `tutorialShown_prod_${user.id}`;
-    
-    const tutorialShown = isDev 
-      ? sessionStorage.getItem(tutorialKey) 
+
+    const tutorialShown = isDev
+      ? sessionStorage.getItem(tutorialKey)
       : localStorage.getItem(tutorialKey);
 
     if (!tutorialShown) {
@@ -86,13 +88,13 @@ const TutorialManager = () => {
     if (!user) return;
     const isDev = process.env.NODE_ENV === 'development';
     const tutorialKey = isDev ? `tutorialShown_dev_${user.id}` : `tutorialShown_prod_${user.id}`;
-    
+
     if (isDev) {
       sessionStorage.setItem(tutorialKey, 'true');
     } else {
       localStorage.setItem(tutorialKey, 'true');
     }
-    
+
     setShowTutorial(false);
   };
 
