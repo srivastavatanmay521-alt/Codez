@@ -38,7 +38,7 @@ Admins can deploy a **Discord Bot** instance from **Create Server**. CodeZ creat
 - `package.json`
 - `.env` containing the bot token and other runtime configuration
 
-Starting the instance runs `npm install --omit=dev` when `package.json` is present, then launches the selected entry file. Discord bots use outbound connections and do not require an exposed network port.
+Starting the instance runs a production-only install against the public npm registry when `package.json` is present, then launches the selected entry file. CodeZ intentionally ignores uploaded lockfiles during this step so stale CodeSandbox/package-firewall tarball URLs cannot break the install. Discord bots use outbound connections and do not require an exposed network port.
 
 ## Development
 

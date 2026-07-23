@@ -89,7 +89,11 @@ export const createServerContainer = async (serverData: any) => {
 
   const botEntrypoint = String(serverData.botEntrypoint || "index.js")
     .replace(/[^a-zA-Z0-9_./-]/g, "");
-  const botCommand = `if [ -f package.json ]; then npm install --omit=dev; fi; exec node ${botEntrypoint || "index.js"}`;
+  const botCommand = [
+    "set -eu",
+    "if [ -f package.json ]; then echo '[CodeZ] Installing production dependencies from registry.npmjs.org...'; npm install --registry=https://registry.npmjs.org --omit=dev --no-audit --no-fund --package-lock=false; fi",
+    `exec node ${botEntrypoint || "index.js"}`
+  ].join("; ");
   const containerConfig: Docker.ContainerCreateOptions = {
     Image: dockerImage,
     name: `jtg-server-${serverData.id}`,
