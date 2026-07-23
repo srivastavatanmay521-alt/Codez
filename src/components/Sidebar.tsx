@@ -33,7 +33,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         {panelLogo ? (
           <img src={panelLogo} alt="Logo" className="w-8 h-8 rounded-lg object-cover shadow-[0_0_15px_rgba(255,255,255,0.1)] flex-shrink-0" />
         ) : (
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-[0_0_15px_rgba(99,102,241,0.5)] flex-shrink-0">
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-600 shadow-[0_0_15px_rgba(6,182,212,0.5)] flex-shrink-0">
             <Server className="w-4 h-4 text-white" />
           </div>
         )}
